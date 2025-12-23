@@ -1,9 +1,9 @@
-# 🧬 saRNA Therapeutics Suite: Integrated Design & Optimization Platform
+# saRNA Therapeutics Suite: Integrated Design & Optimization Platform
 An end-to-end bioinformatics ecosystem for the discovery, thermodynamic validation, and bioprocess optimization of Small Activating RNA (saRNA) candidates.
 
 
 
-## 🌟 Suite Overview
+## Suite Overview
 This suite bridges the gap between genomic data and laboratory synthesis by providing researchers with high-precision tools for **RNA Activation (RNAa)** drug discovery.
 
 ### Advanced saRNA Designer (Scientific AI Edition)
