@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced saRNA Designer (Scientific AI Edition)</title>
+<style>
+    :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f6f9; --success: #27ae60; }
+    body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg); color: #333; padding: 20px; line-height: 1.6; }
+    .container { max-width: 1100px; margin: 0 auto; background: white; padding: 35px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); }
+    
+    h2 { color: var(--primary); border-bottom: 3px solid var(--accent); padding-bottom: 15px; margin-top: 0; display: flex; align-items: center; gap: 10px; }
+    
+    .info-box { background: #eef7ff; padding: 15px; border-left: 5px solid var(--accent); margin-bottom: 25px; font-size: 0.9em; border-radius: 4px; }
+    
+    /* Input Area */
+    .input-group label { font-weight: 700; display: block; margin-bottom: 8px; color: var(--primary); }
+    textarea { width: 100%; height: 120px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 14px; box-sizing: border-box; transition: border 0.3s; }
+    textarea:focus { border-color: var(--accent); outline: none; }
+    
+    /* Controls Grid */
+    .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 25px; background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee; }
+    
+    .control-item label { font-size: 0.85em; font-weight: 600; margin-bottom: 5px; display: block; }
+    input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+    
+    /* Checkbox Style */
+    .checkbox-wrapper { display: flex; align-items: center; gap: 10px; height: 100%; }
+    input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+    
+    /* Buttons */
+    button.main-btn { background-color: var(--accent); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; transition: background 0.2s; }
+    button.main-btn:hover { background-color: #2980b9; }
+    
+    button.action-btn { background-color: #ecf0f1; color: var(--primary); border: 1px solid #bdc3c7; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    button.action-btn:hover { background-color: #bdc3c7; }
+
+    /* Results Table */
+    .table-container { overflow-x: auto; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background-color: var(--primary); color: white; text-align: left; padding: 12px; }
+    td { padding: 10px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    tr:hover { background-color: #f1f1f1; }
+    
+    .seq-font { font-family: 'Courier New', monospace; letter-spacing: 0.5px; color: #444; font-weight: 600; }
+    .score-high { color: var(--success); font-weight: 800; }
+    .score-med { color: #f39c12; font-weight: 700; }
+    .score-low { color: #e74c3c; }
+
+    /* Modal (Popup) */
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+    .modal-content { background-color: white; margin: 10% auto; padding: 30px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; }
+    .close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .close-btn:hover { color: black; }
+    
+    .duplex-visual { background: #1e1e1e; color: #00ff00; padding: 20px; border-radius: 8px; font-family: 'Courier New', monospace; margin-top: 15px; line-height: 2; font-size: 16px; overflow-x: auto; }
+    .duplex-label { color: #aaa; font-size: 12px; display: inline-block; width: 80px; }
+    .strand-sense { color: #4facfe; } /* Blue for Sense */
+    .strand-anti { color: #ff5e62; } /* Red for Antisense */
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2> saRNA Designer <span style="font-size:0.6em; color:#7f8c8d; font-weight:normal; margin-left:10px;">(Scientific AI Edition)</span></h2>
+    
+    <div class="info-box">
+        <strong>Methodology:</strong> This tool utilizes <em>Nearest-Neighbor Thermodynamics</em> to calculate Gibbs Free Energy ($\Delta G$) and applies Reynolds/Ui-Tei rules. It mines the promoter region for optimal small activating RNA candidates.
+    </div>
+
+    <div class="input-group">
+        <label>Target Promoter Sequence (5' &rarr; 3' DNA Sense Strand)</label>
+        <textarea id="sequenceInput" placeholder=">Gene_Name (Optional)&#10;AGCTAGCT... Paste your sequence here..."></textarea>
+    </div>
+
+    <div class="controls">
+        <div class="control-item">
+            <label>Oligo Length (nt)</label>
+            <input type="number" id="oligoLength" value="19" min="19" max="23">
+        </div>
+        <div class="control-item">
+            <label>Min GC %</label>
+            <input type="number" id="minGC" value="35">
+        </div>
+        <div class="control-item">
+            <label>Max GC %</label>
+            <input type="number" id="maxGC" value="65">
+        </div>
+        
+        <div class="control-item checkbox-wrapper">
+            <input type="checkbox" id="enforceAT" checked>
+            <label for="enforceAT" style="margin:0; cursor:pointer;">
+                Strict A/T Rich 3' End<br>
+                <span style="font-weight:normal; font-size:0.8em; color:#666;">(Last 4 bases MUST be A or T)</span>
+            </label>
+        </div>
+
+        <div class="control-item" style="display:flex; align-items:flex-end;">
+            <button class="main-btn" onclick="runAnalysis()"> Run Analysis</button>
+        </div>
+    </div>
+
+    <div id="loading" style="display:none; text-align:center; padding:20px; color:#666;">Analyzing thermodynamics...</div>
+
+    <div id="resultsArea" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-bottom:1px solid #eee; padding-bottom:10px;">
+            <h3 style="margin:0;">Candidates Found: <span id="resultCount">0</span></h3>
+            <button class="action-btn" onclick="downloadCSV()"> Download CSV</button>
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Sequence (5' &rarr; 3')</th>
+                        <th>GC %</th>
+                        <th>&Delta;G Total</th>
+                        <th>Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="duplexModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h3 style="margin-top:0;">RNA Duplex Structure</h3>
+        <p style="font-size:0.9em; color:#666;">The visualization below shows the <strong>Sense (Passenger)</strong> strand and the <strong>Antisense (Guide)</strong> strand alignment.</p>
+        
+        <div class="duplex-visual" id="duplexContent">
+            </div>
+        
+        <div style="margin-top:20px; text-align:right;">
+            <button class="action-btn" onclick="copyDuplex()">Copy Sequences</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. SCIENTIFIC DATA (Turner Parameters) ---
+    const nnParams = {
+        "AA": -0.9, "TT": -0.9, "AT": -0.9, "TA": -1.1, "CA": -1.8, "TG": -1.8, 
+        "GT": -1.7, "AC": -1.7, "CT": -1.7, "AG": -1.7, "GA": -2.3, "TC": -2.3, 
+        "CG": -3.4, "GC": -3.4, "GG": -2.1, "CC": -2.1
+    };
+
+    let globalResults = [];
+
+    // --- 2. HELPER FUNCTIONS ---
+
+    function getGC(seq) {
+        let matches = seq.match(/[GC]/g);
+        return matches ? (matches.length / seq.length * 100) : 0;
+    }
+
+    function calculateDeltaG(seq) {
+        // --- DEĞİŞİKLİK BAŞLANGICI ---
+        
+        // 1. Helix Initiation Penalty (Başlangıç Cezası)
+        // İki RNA ipliğinin bağlanmaya başlaması için gereken enerji maliyeti.
+        // Standart Turner kurallarına göre bu yaklaşık +3.4 kcal/mol'dür.
+        // Bunu eklemezsen sonuçların ViennaRNA'dan hep 3-4 puan düşük çıkar.
+        let dG = 3.4; 
+
+        // 2. Nearest-Neighbor (Komşuluk) Hesabı (Eski kodunla aynı mantık)
+        for (let i = 0; i < seq.length - 1; i++) {
+            let dimer = seq.substring(i, i+2);
+            dG += nnParams[dimer] || -1.0; 
+        }
+
+        // 3. Terminal AU Penalty (Uçlarda A veya T varsa ceza)
+        // RNA sarmalının uçlarında G-C yerine A-U (kodda A-T) varsa,
+        // uçlar daha gevşek olur. Bu da stabiliteyi düşürür (+ enerji ekler).
+        // Genelde uç başına +0.5 kcal/mol eklenir.
+        
+        // 5' ucu kontrolü (Baş taraf)
+        if (seq.startsWith('A') || seq.startsWith('T')) {
+            dG += 0.5;
+        }
+        
+        // 3' ucu kontrolü (Son taraf)
+        if (seq.endsWith('A') || seq.endsWith('T')) {
+            dG += 0.5;
+        }
+
+        return dG;
+        // --- DEĞİŞİKLİK SONU ---
+    }
+
+    // Generate Antisense (Reverse Complement)
+    function getAntisense(seq) {
+        const complement = { 'A': 'U', 'T': 'A', 'C': 'G', 'G': 'C' };
+        let rnaSeq = seq.split('').map(b => complement[b] || b).reverse().join('');
+        return rnaSeq;
+    }
+
+    function calculateScientificScore(seq, dG_Total, dG_Diff) {
+        let score = 0;
+        let L = seq.length;
+        
+        // Asymmetry Rule
+        if (dG_Diff > 1.0) score += 25; 
+        else if (dG_Diff > 0) score += 15;
+        
+        // Stability Rule
+        if (dG_Total > -30 && dG_Total < -18) score += 10;
+
+        // Position Rules
+        let gc = getGC(seq);
+        if (gc >= 30 && gc <= 52) score += 10;
+        
+        if (seq[0] === 'G' || seq[0] === 'C') score -= 5; 
+        if (seq[L-1] === 'A' || seq[L-1] === 'T') score += 10;
+        if (seq[9] === 'A') score += 5; 
+        
+        if (/AAAA|TTTT|GGGG|CCCC/.test(seq)) score -= 50; 
+
+        return Math.max(0, Math.min(100, 50 + score));
+    }
+
+    // --- 3. MAIN LOGIC ---
+
+    function runAnalysis() {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('resultsArea').style.display = 'none';
+
+        setTimeout(() => {
+            const rawSeq = document.getElementById('sequenceInput').value;
+            const sequence = rawSeq.replace(/^>.*\n?/gm, '').replace(/[^a-zA-Z]/g, '').toUpperCase();
+            const length = parseInt(document.getElementById('oligoLength').value);
+            const minGC = parseFloat(document.getElementById('minGC').value);
+            const maxGC = parseFloat(document.getElementById('maxGC').value);
+            
+            const enforceAT = document.getElementById('enforceAT').checked;
+
+            globalResults = [];
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            if(sequence.length < length) {
+                alert("Sequence is too short!");
+                document.getElementById('loading').style.display = 'none';
+                return;
+            }
+
+            for (let i = 0; i <= sequence.length - length; i++) {
+                let subSeq = sequence.substring(i, i + length);
+                
+                // 1. GC Filter
+                let gc = getGC(subSeq);
+                if (gc < minGC || gc > maxGC) continue;
+
+                // 2. Homopolymer Filter
+                if (/AAAA|TTTT|GGGG|CCCC/.test(subSeq)) continue;
+
+                // 3. Strict 3' End A/T Filter (Regex Update)
+                if (enforceAT) {
+                    let tail = subSeq.substring(length - 4);
+                    // Check if strictly A or T
+                    let isPureAT = /^[AT]+$/.test(tail);
+                    if (!isPureAT) continue;
+                }
+
+                // 4. Thermodynamics
+                let totalDG = calculateDeltaG(subSeq);
+                let headDG = calculateDeltaG(subSeq.substring(0, 4));
+                let tailDG = calculateDeltaG(subSeq.substring(length-4));
+                let asymmetryDiff = tailDG - headDG; 
+
+                // 5. Score
+                let score = calculateScientificScore(subSeq, totalDG, asymmetryDiff);
+
+                globalResults.push({
+                    pos: i + 1,
+                    seq: subSeq,
+                    gc: gc.toFixed(1),
+                    dG: totalDG.toFixed(1),
+                    score: score
+                });
+            }
+
+            globalResults.sort((a, b) => b.score - a.score);
+            renderTable(globalResults.slice(0, 100));
+
+            document.getElementById('resultCount').innerText = globalResults.length;
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('resultsArea').style.display = 'block';
+
+        }, 50);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        data.forEach((r, index) => {
+            let scoreClass = r.score >= 70 ? 'score-high' : (r.score >= 50 ? 'score-med' : 'score-low');
+            
+            let row = `<tr>
+                <td>${r.pos}</td>
+                <td class="seq-font">${r.seq}</td>
+                <td>${r.gc}</td>
+                <td>${r.dG}</td>
+                <td class="${scoreClass}">${r.score}</td>
+                <td>
+                    <button class="action-btn" onclick="openModal('${r.seq}')">View Duplex</button>
+                </td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+    // --- 4. MODAL & VISUALIZATION LOGIC ---
+
+    let currentSense = "";
+    let currentAnti = "";
+
+    function openModal(dnaSeq) {
+        currentSense = dnaSeq.replace(/T/g, 'U'); // DNA to RNA
+        currentAnti = getAntisense(dnaSeq); // Generate Antisense RNA
+        
+        let html = `
+            <div style="margin-bottom:5px;">
+                <span class="duplex-label">Sense 5':</span> 
+                <span class="strand-sense">${currentSense}</span> - 3'
+            </div>
+            <div style="margin-bottom:5px; padding-left:90px; color:#555;">
+                ${'|'.repeat(currentSense.length)}
+            </div>
+            <div>
+                <span class="duplex-label">Anti 3':</span> 
+                <span class="strand-anti">${currentAnti.split('').reverse().join('')}</span> - 5'
+            </div>
+            <div style="margin-top:20px; font-size:12px; color:#888; border-top:1px solid #444; padding-top:10px;">
+                <strong>Guide Strand (Antisense 5'->3'):</strong><br>
+                ${currentAnti}
+            </div>
+        `;
+        
+        document.getElementById('duplexContent').innerHTML = html;
+        document.getElementById('duplexModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('duplexModal').style.display = 'none';
+    }
+
+    // --- FIX: Robust Copy Function ---
+    function copyDuplex() {
+        const text = `Sense (5'-3'): ${currentSense}\nAntisense (5'-3'): ${currentAnti}`;
+
+        // 1. Try Modern API first
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Sequences copied to clipboard!");
+            }).catch(err => {
+                fallbackCopy(text);
+            });
+        } else {
+            // 2. Fallback for HTTP or older browsers
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        let textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; // Avoid scrolling
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            let successful = document.execCommand('copy');
+            if(successful) alert("Sequences copied to clipboard!");
+            else alert("Copy failed. Please copy manually.");
+        } catch (err) {
+            alert("Copy error. Please copy manually.");
+        }
+        document.body.removeChild(textArea);
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('duplexModal')) {
+            closeModal();
+        }
+    }
+
+    function downloadCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Position,Sense_Sequence_DNA,GC_Percent,DeltaG,Scientific_Score\n";
+        globalResults.forEach(r => {
+            csvContent += `${r.pos},${r.seq},${r.gc},${r.dG},${r.score}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "saRNA_candidates.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>

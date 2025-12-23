@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>saRNA Generator - V7.6 (GC Added)</title>
+    <style>
+        /* --- TEMEL AYARLAR --- */
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            padding-bottom: 100px; /* Dock için boşluk */
+            text-align: center;
+        }
+
+        .container { max-width: 950px; margin: 0 auto; text-align: left; }
+        h2 { color: #3b82f6; text-align: center; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+
+        /* GİRİŞ ALANI */
+        .input-panel {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        textarea {
+            width: 100%; height: 120px;
+            background: #000; color: #fff;
+            border: 2px solid #444; padding: 10px;
+            font-family: monospace; font-size: 14px;
+            box-sizing: border-box; outline: none;
+        }
+        textarea:focus { border-color: #3b82f6; }
+
+        .controls { margin-top: 15px; display: flex; gap: 15px; align-items: center; }
+
+        input[type="number"] {
+            padding: 12px; background: #333; border: 1px solid #555;
+            color: white; border-radius: 4px; font-weight: bold; width: 80px;
+        }
+
+        button.primary-btn {
+            background-color: #3b82f6; color: white; border: none;
+            padding: 14px 30px; font-size: 16px; font-weight: bold;
+            border-radius: 4px; cursor: pointer; flex-grow: 1;
+        }
+        button.primary-btn:hover { background-color: #2563eb; }
+
+        /* DURUM MESAJI */
+        #statusMsg { margin-top: 10px; font-weight: bold; color: #ffd700; display: none; }
+
+        /* KARTLAR */
+        .card {
+            background: #1a1a1a; border: 1px solid #333;
+            margin-top: 20px; padding: 15px; border-radius: 6px;
+            position: relative; transition: border 0.2s;
+        }
+        
+        .card.selected {
+            border: 2px solid #10b981; /* Yeşil Çerçeve */
+            background: #13221b;
+        }
+
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 10px;
+        }
+
+        .pos-badge { background: #333; padding: 4px 8px; border-radius: 4px; }
+
+        .btn-group { display: flex; gap: 10px; }
+
+        .btn-act {
+            background: transparent; border: 1px solid #555; color: #ccc;
+            padding: 5px 12px; cursor: pointer; border-radius: 4px;
+        }
+        .btn-act:hover { background: #333; color: white; }
+
+        .btn-select { border-color: #888; color: #fff; font-weight: bold; }
+        .btn-select.active { background: #10b981; border-color: #10b981; color: white; }
+
+        /* VERİ SATIRLARI */
+        .data-row {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #111; padding: 10px; margin-bottom: 5px; border-radius: 4px;
+        }
+        .seq-font { font-family: monospace; font-size: 1.1em; color: #fff; word-break: break-all; }
+        
+        .copy-btn {
+            background: #333; color: #fff; border: 1px solid #555;
+            padding: 6px 12px; cursor: pointer; margin-left: 10px; white-space: nowrap;
+        }
+        .copy-btn:hover { background: #444; }
+
+        /* DUPLEX */
+        .duplex-box {
+            display: none; background: #000; border-left: 4px solid #3b82f6;
+            padding: 15px; margin-top: 10px; font-family: monospace; overflow-x: auto;
+        }
+        .d-line { white-space: pre; margin-bottom: 4px; }
+        .hl-sense { color: #3b82f6; font-weight: bold; }
+        .hl-anti { color: #ec4899; font-weight: bold; }
+
+        /* --- YENİ EKLENEN GC STİLLERİ --- */
+        .gc-info-row {
+            display: flex; align-items: center; margin-bottom: 15px; 
+            padding-bottom: 10px; border-bottom: 1px solid #333;
+        }
+        .gc-badge {
+            font-size: 0.85em; padding: 4px 10px; border-radius: 4px; 
+            margin-left: 10px; font-weight: bold; border: 1px solid;
+        }
+        .gc-good { background: rgba(16, 185, 129, 0.2); color: #34d399; border-color: #059669; }
+        .gc-bad { background: rgba(239, 68, 68, 0.2); color: #f87171; border-color: #b91c1c; }
+
+
+        /* YÜKLEME BUTONU */
+        #loadMoreBtn {
+            width: 100%; padding: 15px; margin-top: 20px;
+            background: #333; color: white; border: 1px solid #555;
+            cursor: pointer; font-weight: bold; display: none;
+        }
+        #loadMoreBtn:hover { background: #444; }
+
+        /* --- DOCK (ALT PANEL) --- */
+        .dock {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #222; border-top: 4px solid #10b981;
+            padding: 15px; display: none; justify-content: center; gap: 20px; align-items: center;
+            z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+        }
+        .dock-btn {
+            padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 4px; border: none;
+        }
+        .btn-clear { background: #ef4444; color: white; }
+        .btn-compare { background: #10b981; color: white; }
+
+        /* --- MODAL (TABLO) --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: none;
+            justify-content: center; align-items: center; z-index: 200;
+        }
+        .modal-content {
+            background: #111; border: 2px solid #555;
+            width: 90%; max-height: 90vh; padding: 20px;
+            display: flex; flex-direction: column;
+        }
+        .modal-body { overflow-y: auto; margin-bottom: 10px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; font-family: monospace; color: #ddd; }
+        th { background: #222; color: #3b82f6; position: sticky; top: 0; }
+        
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2> saRNA Generator - V7.6 (GC+)</h2>
+
+    <div class="input-panel">
+        <label>1. Paste Sequence (Auto-Clean):</label>
+        <textarea id="seqInput" placeholder="Paste DNA sequence here..."></textarea>
+        
+        <div class="controls">
+            <div>
+                <label style="color:#aaa; font-size:0.9em">Window Size:</label>
+                <input type="number" id="winSize" value="21">
+            </div>
+            <button id="runBtn" class="primary-btn" onclick="startGenerator()">GENERATE & SELECT</button>
+        </div>
+        <div id="statusMsg">Ready.</div>
+    </div>
+
+    <div id="resultsArea"></div>
+    <button id="loadMoreBtn" onclick="renderNextBatch()">Load Next 50 Results</button>
+</div>
+
+<div class="dock" id="dock">
+    <div style="font-size:1.2em; font-weight:bold;">
+        SELECTED: <span id="selCount" style="color:#10b981">0</span>
+    </div>
+    <button class="dock-btn btn-clear" onclick="clearSelection()">CLEAR ALL</button>
+    <button class="dock-btn btn-compare" onclick="openComparison()">COMPARE SELECTED</button>
+</div>
+
+<div class="modal" id="compModal">
+    <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+            <h3 style="margin:0; color:#3b82f6;">Comparison Table</h3>
+            <button onclick="closeModal()" style="background:transparent; border:1px solid #555; color:red; cursor:pointer; padding:5px 15px;">CLOSE X</button>
+        </div>
+        
+        <div class="modal-body">
+            <table id="compTable">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Target DNA</th>
+                        <th>Sense RNA</th>
+                        <th>Antisense (Guide)</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        
+        <button class="primary-btn" onclick="copyTableData()">COPY TABLE TO CLIPBOARD</button>
+    </div>
+</div>
+
+<script>
+    // --- GLOBAL VARIABLES ---
+    var allData = [];
+    var renderIndex = 0;
+    var BATCH_SIZE = 50;
+    var selectedIds = new Set(); // Stores IDs of selected items
+
+    // --- 1. GENERATION LOGIC ---
+    function startGenerator() {
+        try {
+            var status = document.getElementById('statusMsg');
+            var resArea = document.getElementById('resultsArea');
+            
+            status.style.display = "block";
+            status.innerText = "Processing...";
+            status.style.color = "yellow";
+
+            // Get Input
+            var rawSeq = document.getElementById('seqInput').value;
+            var winSize = parseInt(document.getElementById('winSize').value);
+
+            // Clean
+            var seq = rawSeq.replace(/[^a-zA-Z]/g, '').toUpperCase();
+
+            if (!seq || seq.length < winSize) {
+                alert("Error: Invalid Sequence!");
+                status.style.display = "none";
+                return;
+            }
+
+            // Compute
+            allData = [];
+            renderIndex = 0;
+            // Clear selection on new run? Yes usually.
+            selectedIds.clear();
+            updateDock();
+            resArea.innerHTML = "";
+
+            for (var i = 0; i <= seq.length - winSize; i++) {
+                var chunk = seq.substring(i, i + winSize);
+                
+                // Sense T->U
+                var sense = chunk.replace(/T/g, 'U');
+                
+                // Anti Visual
+                var antiVis = "";
+                for(var k=0; k<sense.length; k++) antiVis += getComp(sense[k]);
+                
+                // Guide
+                var guide = "";
+                for(var j=sense.length-1; j>=0; j--) guide += getComp(sense[j]);
+
+                allData.push({
+                    id: i,
+                    pos: i + 1,
+                    target: chunk,
+                    sense: sense,
+                    antiVis: antiVis,
+                    guide: guide
+                });
+            }
+
+            // First Batch
+            renderNextBatch();
+            
+            status.innerText = "Found " + allData.length + " candidates.";
+            status.style.color = "#10b981";
+
+        } catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    // --- 2. RENDERING (PAGINATION) ---
+    function renderNextBatch() {
+        var container = document.getElementById('resultsArea');
+        var moreBtn = document.getElementById('loadMoreBtn');
+        var max = Math.min(renderIndex + BATCH_SIZE, allData.length);
+
+        for (var i = renderIndex; i < max; i++) {
+            var d = allData[i];
+            var card = createCardHTML(d);
+            container.appendChild(card);
+        }
+
+        renderIndex = max;
+
+        if (renderIndex < allData.length) {
+            moreBtn.style.display = "block";
+            moreBtn.innerText = "Load Next 50 (" + (allData.length - renderIndex) + " remaining)";
+        } else {
+            moreBtn.style.display = "none";
+        }
+    }
+
+    // --- 3. HTML BUILDER (UPDATED FOR GC) ---
+    function createCardHTML(d) {
+        var div = document.createElement('div');
+        div.className = 'card';
+        div.id = 'card-' + d.id; // ID for selection logic
+
+        // Check if already selected (memory)
+        var isSel = selectedIds.has(d.id);
+        if(isSel) div.classList.add('selected');
+
+        var selBtnText = isSel ? "SELECTED" : "SELECT";
+        var selBtnClass = isSel ? "btn-act btn-select active" : "btn-act btn-select";
+
+        var bonds = "";
+        for(var x=0; x<d.sense.length; x++) bonds += "| ";
+        var fullData = "Target: " + d.target + "\\nSense: " + d.sense + "\\nGuide: " + d.guide;
+
+        // --- YENİ: GC HESAPLAMA ---
+        var gcCount = (d.target.match(/[GC]/g) || []).length;
+        var gcVal = ((gcCount / d.target.length) * 100).toFixed(1);
+        var gcClass = (gcVal >= 35 && gcVal <= 55) ? "gc-good" : "gc-bad";
+        var gcText = (gcVal >= 35 && gcVal <= 55) ? "✔ Optimal" : "⚠ Risk";
+
+
+        div.innerHTML = 
+            '<div class="card-header">' +
+                '<span class="pos-badge">Pos: ' + d.pos + '</span>' +
+                '<div class="btn-group">' + 
+                    '<button class="btn-act" onclick="toggleDuplex(this)">View Duplex</button>' +
+                    '<button class="' + selBtnClass + '" id="btn-sel-'+d.id+'" onclick="toggleSelect('+d.id+')">' + selBtnText + '</button>' +
+                '</div>' +
+            '</div>' +
+            
+            '<div class="data-row">' +
+                '<div><span style="font-size:0.8em; color:#06b6d4">Target DNA</span><br><span class="seq-font">' + d.target + '</span></div>' +
+                '<button class="copy-btn" onclick="runCopy(\'' + d.target + '\', this)">Copy</button>' +
+            '</div>' +
+
+            '<div class="duplex-box">' +
+                // --- YENİ: GC GÖSTERİMİ (Duplex Penceresinin İçinde) ---
+                '<div class="gc-info-row">' +
+                    '<span style="color:#aaa; font-size:0.9em">Analysis: </span>' +
+                    '<span class="gc-badge ' + gcClass + '">GC: %' + gcVal + ' ' + gcText + '</span>' +
+                '</div>' +
+
+                '<div class="d-line">Sense 5\': <span class="hl-sense">' + d.sense.split('').join(' ') + '</span> 3\'</div>' +
+                '<div class="d-line" style="margin-left:84px; color:#555; line-height:0.5">' + bonds + '</div>' +
+                '<div class="d-line">Anti  3\': <span class="hl-anti">' + d.antiVis.split('').join(' ') + '</span> 5\'</div>' +
+                '<br>' +
+                '<div class="data-row" style="background:#222; margin:0;">' + 
+                    '<div><span style="font-size:0.8em; color:#ec4899">Guide Strand</span><br><span class="seq-font">' + d.guide + '</span></div>' +
+                    '<button class="copy-btn" onclick="runCopy(\'' + fullData + '\', this)">Copy Full</button>' +
+                '</div>' +
+            '</div>';
+        
+        return div;
+    }
+
+    // --- 4. SELECTION LOGIC ---
+    function toggleSelect(id) {
+        var card = document.getElementById('card-' + id);
+        var btn = document.getElementById('btn-sel-' + id);
+
+        if(selectedIds.has(id)) {
+            // Deselect
+            selectedIds.delete(id);
+            if(card) card.classList.remove('selected');
+            if(btn) {
+                btn.classList.remove('active');
+                btn.innerText = "SELECT";
+            }
+        } else {
+            // Select
+            selectedIds.add(id);
+            if(card) card.classList.add('selected');
+            if(btn) {
+                btn.classList.add('active');
+                btn.innerText = "SELECTED";
+            }
+        }
+        updateDock();
+    }
+
+    function clearSelection() {
+        selectedIds.clear();
+        // Update visible UI
+        var cards = document.getElementsByClassName('card');
+        for(var i=0; i<cards.length; i++) cards[i].classList.remove('selected');
+        
+        var btns = document.getElementsByClassName('btn-select');
+        for(var i=0; i<btns.length; i++) {
+            btns[i].classList.remove('active');
+            btns[i].innerText = "SELECT";
+        }
+        updateDock();
+    }
+
+    function updateDock() {
+        var dock = document.getElementById('dock');
+        var countSpan = document.getElementById('selCount');
+        countSpan.innerText = selectedIds.size;
+
+        if(selectedIds.size > 0) dock.style.display = "flex";
+        else dock.style.display = "none";
+    }
+
+    // --- 5. COMPARISON & MODAL ---
+    function openComparison() {
+        var tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+
+        // Sort selected IDs by position
+        var sortedIds = Array.from(selectedIds).sort(function(a, b) { return a - b; });
+
+        for(var i=0; i<sortedIds.length; i++) {
+            var id = sortedIds[i];
+            var d = allData[id]; // Access data from memory
+            
+            var tr = document.createElement('tr');
+            tr.innerHTML = 
+                '<td>' + d.pos + '</td>' +
+                '<td style="color:#06b6d4">' + d.target + '</td>' +
+                '<td>' + d.sense + '</td>' +
+                '<td style="color:#ec4899">' + d.guide + '</td>';
+            tbody.appendChild(tr);
+        }
+
+        document.getElementById('compModal').style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById('compModal').style.display = "none";
+    }
+
+    function copyTableData() {
+        var txt = "Pos\tTarget DNA\tSense RNA\tGuide RNA\n";
+        var sortedIds = Array.from(selectedIds).sort(function(a, b) { return a - b; });
+
+        for(var i=0; i<sortedIds.length; i++) {
+            var d = allData[sortedIds[i]];
+            txt += d.pos + "\t" + d.target + "\t" + d.sense + "\t" + d.guide + "\n";
+        }
+        runCopy(txt, null);
+        alert("Table copied to clipboard!");
+    }
+
+    // --- 6. UTILITIES ---
+    function getComp(base) {
+        if (base == 'A') return 'U'; if (base == 'T') return 'A';
+        if (base == 'U') return 'A'; if (base == 'G') return 'C';
+        if (base == 'C') return 'G'; return 'N';
+    }
+
+    function toggleDuplex(btn) {
+        var box = btn.parentElement.parentElement.parentElement.getElementsByClassName('duplex-box')[0];
+        if (box.style.display === "block") {
+            box.style.display = "none";
+            btn.innerText = "View Duplex";
+        } else {
+            box.style.display = "block";
+            btn.innerText = "Hide";
+        }
+    }
+
+    function runCopy(text, btn) {
+        var clean = text.replace(/\\n/g, '\n');
+        var ta = document.createElement("textarea");
+        ta.value = clean;
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
+            if(btn) {
+                var old = btn.innerText;
+                btn.innerText = "Copied!";
+                btn.style.background = "#10b981";
+                setTimeout(function(){ btn.innerText = old; btn.style.background = ""; }, 1500);
+            }
+        } catch(e) {}
+        document.body.removeChild(ta);
+    }
+</script>
+
+</body>
+</html>
