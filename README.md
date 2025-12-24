@@ -36,4 +36,4 @@ The algorithms in this suite are based on established peer-reviewed literature:
 - **Client-Side Computing:** Built with Vanilla JavaScript to ensure 100% data privacy. No genomic target data is sent to a server; all calculations happen locally in the user's browser.
 - **High Performance:** Designed with lazy-rendering and batch pagination to process multi-kilobase genomic sequences without UI lag.
 - **Compatibility:** TSV-formatted data exports ensure 100% compatibility with LIMS and electronic lab notebooks (ELN) like Benchling.
-- Designed the biological algorithms and scoring logic independently, leveraging AI-augmented coding techniques to accelerate software development and prototype deployment.
+
